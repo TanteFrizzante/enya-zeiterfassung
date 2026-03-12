@@ -1,14 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { TabId } from './types'
 import { BottomNav } from './components/BottomNav'
 import { HandoverPage } from './pages/HandoverPage'
 import { CalendarPage } from './pages/CalendarPage'
 import { StatsPage } from './pages/StatsPage'
 import { useActiveSession } from './hooks/useActiveSession'
+import { prefillIfNeeded } from './services/scheduleService'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('handover')
-  const { activeSession, handover } = useActiveSession()
+  const { activeSession, handover, refresh } = useActiveSession()
+
+  // Beim ersten Start: Umgangsplan vorausfüllen
+  useEffect(() => {
+    const result = prefillIfNeeded()
+    if (result) {
+      refresh()
+    }
+  }, [refresh])
 
   return (
     <div className="h-full flex flex-col bg-slate-50">

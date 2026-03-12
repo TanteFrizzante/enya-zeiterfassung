@@ -13,6 +13,7 @@ import { de } from 'date-fns/locale'
 import { CareSession } from '../types'
 import { CAREGIVERS } from '../config/caregivers'
 import { getSessionsInRange } from '../services/sessionService'
+import { getScheduledCaregiver } from '../config/schedule'
 
 export function CalendarPage() {
   const [weekOffset, setWeekOffset] = useState(0)
@@ -94,6 +95,8 @@ function DayRow({
   const isToday = isSameDay(day, new Date())
   const dayStart = startOfDay(day).getTime()
   const dayEnd = endOfDay(day).getTime()
+  const scheduled = getScheduledCaregiver(day)
+  const scheduledCg = scheduled ? CAREGIVERS[scheduled.caregiverId] : null
 
   const dayBlocks = sessions
     .filter((s) => {
@@ -131,6 +134,17 @@ function DayRow({
             </span>
           )}
         </span>
+        {scheduledCg && (
+          <span
+            className="text-xs px-2 py-0.5 rounded-full"
+            style={{
+              backgroundColor: scheduledCg.colorHex + '20',
+              color: scheduledCg.colorHex,
+            }}
+          >
+            {scheduled!.label}
+          </span>
+        )}
       </div>
 
       {dayBlocks.length === 0 ? (
