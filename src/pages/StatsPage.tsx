@@ -6,6 +6,21 @@ import { CAREGIVERS } from '../config/caregivers'
 import { getSessionsInRange } from '../services/sessionService'
 import { useStats } from '../hooks/useStats'
 
+function formatDuration(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  const pad = (n: number) => n.toString().padStart(2, '0')
+
+  if (hours > 0) {
+    return `${hours}h ${pad(minutes)}m ${pad(seconds)}s`
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${pad(seconds)}s`
+  }
+  return `${seconds}s`
+}
+
 export function StatsPage() {
   const [period, setPeriod] = useState<StatsPeriod>('week')
 
@@ -30,9 +45,7 @@ export function StatsPage() {
 
   const stats = useStats(sessions)
 
-  const totalMinutes = stats.reduce((sum, s) => sum + s.totalMinutes, 0)
-  const totalHours = Math.floor(totalMinutes / 60)
-  const totalMins = totalMinutes % 60
+  const totalSeconds = stats.reduce((sum, s) => sum + s.totalSeconds, 0)
 
   return (
     <div className="flex flex-col h-full">
@@ -62,8 +75,6 @@ export function StatsPage() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {stats.map((stat) => {
           const cg = CAREGIVERS[stat.caregiverId]
-          const hours = Math.floor(stat.totalMinutes / 60)
-          const mins = stat.totalMinutes % 60
 
           return (
             <div
@@ -79,7 +90,7 @@ export function StatsPage() {
                   <span className="text-sm text-gray-400 ml-2">{cg.role}</span>
                 </div>
                 <span className="text-lg font-bold text-gray-800">
-                  {hours > 0 ? `${hours}h ${mins}m` : `${mins}m`}
+                  {formatDuration(stat.totalSeconds)}
                 </span>
               </div>
 
@@ -118,11 +129,11 @@ export function StatsPage() {
       </div>
 
       {/* Total */}
-      {totalMinutes > 0 && (
+      {totalSeconds > 0 && (
         <div className="px-4 py-3 bg-white border-t border-gray-200 text-center">
           <span className="text-sm text-gray-500">Gesamt: </span>
           <span className="font-bold text-gray-800">
-            {totalHours > 0 ? `${totalHours}h ${totalMins}m` : `${totalMins}m`}
+            {formatDuration(totalSeconds)}
           </span>
         </div>
       )}

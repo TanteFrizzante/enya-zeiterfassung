@@ -21,7 +21,7 @@ export type StatsPeriod = 'week' | 'month'
 
 export interface CaregiverStats {
   caregiverId: CaregiverId
-  totalMinutes: number
+  totalSeconds: number
   sessionCount: number
   percentageOfTotal: number
 }

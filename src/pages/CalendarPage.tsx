@@ -170,7 +170,7 @@ function DayRow({
                     left: `${leftPercent}%`,
                     width: `${Math.max(widthPercent, 1)}%`,
                   }}
-                  title={`${cg.name}: ${format(new Date(block.displayStart), 'HH:mm')} - ${format(new Date(block.displayEnd), 'HH:mm')}`}
+                  title={`${cg.name}: ${format(new Date(block.displayStart), 'HH:mm:ss')} - ${format(new Date(block.displayEnd), 'HH:mm:ss')}`}
                 />
               )
             })}
@@ -179,11 +179,13 @@ function DayRow({
           <div className="mt-2 space-y-1">
             {dayBlocks.map((block, i) => {
               const cg = CAREGIVERS[block.caregiverId]
-              const durationMin = Math.round(
-                (block.displayEnd - block.displayStart) / 60000
+              const durationSec = Math.round(
+                (block.displayEnd - block.displayStart) / 1000
               )
-              const hours = Math.floor(durationMin / 60)
-              const mins = durationMin % 60
+              const hours = Math.floor(durationSec / 3600)
+              const mins = Math.floor((durationSec % 3600) / 60)
+              const secs = durationSec % 60
+              const pad = (n: number) => n.toString().padStart(2, '0')
 
               return (
                 <div key={i} className="flex items-center text-xs text-gray-600">
@@ -193,11 +195,11 @@ function DayRow({
                   />
                   <span className="font-medium mr-1">{cg.name}</span>
                   <span>
-                    {format(new Date(block.displayStart), 'HH:mm')} –{' '}
-                    {format(new Date(block.displayEnd), 'HH:mm')}
+                    {format(new Date(block.displayStart), 'HH:mm:ss')} –{' '}
+                    {format(new Date(block.displayEnd), 'HH:mm:ss')}
                   </span>
                   <span className="ml-auto text-gray-400">
-                    {hours > 0 ? `${hours}h ${mins}m` : `${mins}m`}
+                    {hours > 0 ? `${hours}h ${pad(mins)}m ${pad(secs)}s` : mins > 0 ? `${mins}m ${pad(secs)}s` : `${secs}s`}
                   </span>
                 </div>
               )

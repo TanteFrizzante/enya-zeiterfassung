@@ -12,12 +12,15 @@ export function useElapsedTime(startTime: number | null): string {
   if (startTime === null) return ''
 
   const elapsed = Math.max(0, now - startTime)
-  const totalMinutes = Math.floor(elapsed / 60000)
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
+  const totalSeconds = Math.floor(elapsed / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  const pad = (n: number) => n.toString().padStart(2, '0')
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m`
+    return `${hours}:${pad(minutes)}:${pad(seconds)}`
   }
-  return `${minutes}m`
+  return `${minutes}:${pad(seconds)}`
 }
