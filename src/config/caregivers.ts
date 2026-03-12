@@ -10,7 +10,7 @@ export const CAREGIVERS: Record<CaregiverId, CaregiverDef> = {
   },
   andreas: {
     id: 'andreas',
-    name: 'Andreas',
+    name: 'Muk',
     role: 'Vater',
     colorHex: '#2563eb',
     emoji: '\u{1F468}',

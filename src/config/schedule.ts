@@ -4,13 +4,13 @@ import { CaregiverId } from '../types'
  * Feste Umgangsregelung für Enya
  *
  * Wochentage (jede Woche gleich):
- *   Montag:     Andreas (ab 15:30)
- *   Dienstag:   Andreas (ganztägig)
+ *   Montag:     Muk (ab 15:30)
+ *   Dienstag:   Muk (ganztägig)
  *   Mittwoch:   Jaie (ab 15:30)
  *   Donnerstag: Jaie (ganztägig)
  *
  * Wochenende (abwechselnd alle 2 Wochen):
- *   Woche A (Papa-WE): Fr-So Andreas
+ *   Woche A (Papa-WE): Fr-So Muk
  *   Woche B (Mama-WE): Fr-So Jaie
  *
  * Referenz: Freitag 13. März 2026 = Papa-Wochenende (WE MUK)
@@ -36,7 +36,7 @@ export const FIXED_WEEKDAYS: Partial<Record<DayOfWeek, DaySchedule>> = {
     startMinute: 30,
     endHour: 23,
     endMinute: 59,
-    label: 'Andreas ab 15:30',
+    label: 'Muk ab 15:30',
   },
   2: { // Dienstag
     caregiverId: 'andreas',
@@ -44,7 +44,7 @@ export const FIXED_WEEKDAYS: Partial<Record<DayOfWeek, DaySchedule>> = {
     startMinute: 0,
     endHour: 23,
     endMinute: 59,
-    label: 'Andreas (ganztägig)',
+    label: 'Muk (ganztägig)',
   },
   3: { // Mittwoch
     caregiverId: 'jaie',
