@@ -11,7 +11,7 @@ import {
 } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { CareSession } from '../types'
-import { CAREGIVERS } from '../config/caregivers'
+import { CAREGIVERS, ACTIVE_CAREGIVER_LIST } from '../config/caregivers'
 import { getSessionsInRange } from '../services/sessionService'
 import { getScheduledCaregiver } from '../config/schedule'
 
@@ -71,7 +71,7 @@ export function CalendarPage() {
 
       {/* Legend */}
       <div className="flex justify-center gap-3 px-4 py-2 bg-white border-t border-gray-100">
-        {Object.values(CAREGIVERS).map((cg) => (
+        {ACTIVE_CAREGIVER_LIST.map((cg) => (
           <div key={cg.id} className="flex items-center gap-1">
             <span
               className="w-3 h-3 rounded-full inline-block"

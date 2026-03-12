@@ -32,3 +32,7 @@ export const CAREGIVERS: Record<CaregiverId, CaregiverDef> = {
 }
 
 export const CAREGIVER_LIST = Object.values(CAREGIVERS)
+
+// Aktive Betreuer (ohne Gabi und Jani)
+export const ACTIVE_CAREGIVER_IDS: CaregiverId[] = ['jaie', 'andreas']
+export const ACTIVE_CAREGIVER_LIST = ACTIVE_CAREGIVER_IDS.map((id) => CAREGIVERS[id])

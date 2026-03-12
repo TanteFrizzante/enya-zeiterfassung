@@ -1,5 +1,5 @@
 import { CareSession } from '../types'
-import { CAREGIVER_LIST, CAREGIVERS } from '../config/caregivers'
+import { ACTIVE_CAREGIVER_LIST, CAREGIVERS } from '../config/caregivers'
 import { CaregiverButton } from '../components/CaregiverButton'
 import { ActiveTimer } from '../components/ActiveTimer'
 import { CaregiverId } from '../types'
@@ -37,7 +37,7 @@ export function HandoverPage({ activeSession, onHandover }: Props) {
           Wer übernimmt Enya?
         </p>
         <div className="grid grid-cols-2 gap-3">
-          {CAREGIVER_LIST.map((cg) => (
+          {ACTIVE_CAREGIVER_LIST.map((cg) => (
             <CaregiverButton
               key={cg.id}
               caregiver={cg}
