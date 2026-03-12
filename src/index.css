@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+:root {
+  --color-jaie: #f43f5e;
+  --color-andreas: #2563eb;
+  --color-gabi: #f59e0b;
+  --color-jani: #10b981;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: #f8fafc;
+  overscroll-behavior: none;
+}
+
+/* Safe area padding for iOS */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
