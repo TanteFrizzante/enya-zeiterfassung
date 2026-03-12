@@ -15,6 +15,7 @@ import { StatsPeriod, CareSession } from '../types'
 import { CAREGIVERS, ACTIVE_CAREGIVER_LIST } from '../config/caregivers'
 import { getSessionsInRange } from '../services/sessionService'
 import { useStats } from '../hooks/useStats'
+import { DonutChart } from '../components/DonutChart'
 
 function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600)
@@ -38,53 +39,6 @@ function formatDurationShort(totalSeconds: number): string {
     return `${hours}h ${minutes}m`
   }
   return `${minutes}m`
-}
-
-/** CSS conic-gradient ring chart for two caregivers */
-function DonutChart({
-  stats,
-}: {
-  stats: { caregiverId: string; totalSeconds: number; percentageOfTotal: number }[]
-}) {
-  const jaie = stats.find((s) => s.caregiverId === 'jaie')
-  const muk = stats.find((s) => s.caregiverId === 'andreas')
-  const jaiePct = jaie?.percentageOfTotal ?? 0
-  const mukPct = muk?.percentageOfTotal ?? 0
-  const total = jaiePct + mukPct
-
-  if (total === 0) {
-    return (
-      <div className="flex items-center justify-center w-40 h-40 mx-auto">
-        <div
-          className="w-full h-full rounded-full flex items-center justify-center"
-          style={{ background: '#e5e7eb' }}
-        >
-          <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center">
-            <span className="text-gray-400 text-xs">Keine Daten</span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const jaieColor = CAREGIVERS.jaie.colorHex
-  const mukColor = CAREGIVERS.andreas.colorHex
-  const jaieDeg = (jaiePct / 100) * 360
-
-  return (
-    <div className="flex items-center justify-center w-40 h-40 mx-auto">
-      <div
-        className="w-full h-full rounded-full flex items-center justify-center"
-        style={{
-          background: `conic-gradient(${jaieColor} 0deg ${jaieDeg}deg, ${mukColor} ${jaieDeg}deg 360deg)`,
-        }}
-      >
-        <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center flex-col">
-          <span className="text-xs text-gray-500 font-medium">Verteilung</span>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 /** Daily breakdown bar chart */

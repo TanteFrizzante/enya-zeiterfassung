@@ -1,9 +1,14 @@
+import { useMemo } from 'react'
+import { startOfWeek, endOfWeek } from 'date-fns'
 import { CareSession } from '../types'
 import { ACTIVE_CAREGIVER_LIST, CAREGIVERS } from '../config/caregivers'
 import { CaregiverButton } from '../components/CaregiverButton'
 import { ActiveTimer } from '../components/ActiveTimer'
+import { DonutChart } from '../components/DonutChart'
 import { CaregiverId } from '../types'
 import { getScheduledCaregiver } from '../config/schedule'
+import { getSessionsInRange } from '../services/sessionService'
+import { useStats } from '../hooks/useStats'
 
 interface Props {
   activeSession: CareSession | null
@@ -13,6 +18,22 @@ interface Props {
 export function HandoverPage({ activeSession, onHandover }: Props) {
   const scheduled = getScheduledCaregiver(new Date())
   const scheduledCg = scheduled ? CAREGIVERS[scheduled.caregiverId] : null
+
+  // Wöchentliche Statistik für das Kuchendiagramm
+  const weekRange = useMemo(() => {
+    const now = new Date()
+    return {
+      start: startOfWeek(now, { weekStartsOn: 1 }),
+      end: endOfWeek(now, { weekStartsOn: 1 }),
+    }
+  }, [])
+
+  const weekSessions = useMemo(
+    () => getSessionsInRange(weekRange.start, weekRange.end),
+    [weekRange]
+  )
+
+  const stats = useStats(weekSessions)
 
   return (
     <div className="flex flex-col h-full">
@@ -46,6 +67,32 @@ export function HandoverPage({ activeSession, onHandover }: Props) {
               onTap={() => onHandover(cg.id)}
             />
           ))}
+        </div>
+
+        {/* Mini-Kuchendiagramm: Verteilung diese Woche */}
+        <div className="mt-5 flex flex-col items-center">
+          <p className="text-xs text-gray-400 mb-2">Diese Woche</p>
+          <DonutChart stats={stats} size="sm" />
+          <div className="flex gap-4 mt-2">
+            {stats.map((stat) => {
+              const cg = CAREGIVERS[stat.caregiverId]
+              return (
+                <div key={stat.caregiverId} className="flex items-center gap-1">
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: cg.colorHex }}
+                  />
+                  <span className="text-xs text-gray-600">{cg.name}</span>
+                  <span
+                    className="text-xs font-bold"
+                    style={{ color: cg.colorHex }}
+                  >
+                    {stat.percentageOfTotal}%
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
     </div>
