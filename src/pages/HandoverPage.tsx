@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { startOfWeek, endOfWeek } from 'date-fns'
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns'
 import { CareSession } from '../types'
 import { ACTIVE_CAREGIVER_LIST, CAREGIVERS } from '../config/caregivers'
 import { CaregiverButton } from '../components/CaregiverButton'
@@ -15,28 +15,75 @@ interface Props {
   onHandover: (id: CaregiverId) => void
 }
 
+function ChartLegend({ stats }: { stats: { caregiverId: CaregiverId; percentageOfTotal: number }[] }) {
+  return (
+    <div className="flex gap-3 mt-1.5">
+      {stats.map((stat) => {
+        const cg = CAREGIVERS[stat.caregiverId]
+        return (
+          <div key={stat.caregiverId} className="flex items-center gap-1">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: cg.colorHex }}
+            />
+            <span className="text-[10px] text-gray-600">{cg.name}</span>
+            <span
+              className="text-[10px] font-bold"
+              style={{ color: cg.colorHex }}
+            >
+              {stat.percentageOfTotal}%
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function HandoverPage({ activeSession, onHandover }: Props) {
   const scheduled = getScheduledCaregiver(new Date())
   const scheduledCg = scheduled ? CAREGIVERS[scheduled.caregiverId] : null
 
-  // Wöchentliche Statistik für das Kuchendiagramm
-  const weekRange = useMemo(() => {
-    const now = new Date()
-    return {
-      start: startOfWeek(now, { weekStartsOn: 1 }),
-      end: endOfWeek(now, { weekStartsOn: 1 }),
-    }
-  }, [])
+  const now = useMemo(() => new Date(), [])
+
+  // Woche
+  const weekRange = useMemo(() => ({
+    start: startOfWeek(now, { weekStartsOn: 1 }),
+    end: endOfWeek(now, { weekStartsOn: 1 }),
+  }), [now])
 
   const weekSessions = useMemo(
     () => getSessionsInRange(weekRange.start, weekRange.end),
     [weekRange]
   )
+  const weekStats = useStats(weekSessions)
 
-  const stats = useStats(weekSessions)
+  // Monat
+  const monthRange = useMemo(() => ({
+    start: startOfMonth(now),
+    end: endOfMonth(now),
+  }), [now])
+
+  const monthSessions = useMemo(
+    () => getSessionsInRange(monthRange.start, monthRange.end),
+    [monthRange]
+  )
+  const monthStats = useStats(monthSessions)
+
+  // Jahr 2026
+  const yearRange = useMemo(() => {
+    const y = new Date(2026, 0, 1)
+    return { start: startOfYear(y), end: endOfYear(y) }
+  }, [])
+
+  const yearSessions = useMemo(
+    () => getSessionsInRange(yearRange.start, yearRange.end),
+    [yearRange]
+  )
+  const yearStats = useStats(yearSessions)
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-y-auto">
       <ActiveTimer session={activeSession} />
 
       {/* Geplanter Betreuer laut Umgangsregelung */}
@@ -69,29 +116,27 @@ export function HandoverPage({ activeSession, onHandover }: Props) {
           ))}
         </div>
 
-        {/* Mini-Kuchendiagramm: Verteilung diese Woche */}
-        <div className="mt-5 flex flex-col items-center">
-          <p className="text-xs text-gray-400 mb-2">Diese Woche</p>
-          <DonutChart stats={stats} size="sm" />
-          <div className="flex gap-4 mt-2">
-            {stats.map((stat) => {
-              const cg = CAREGIVERS[stat.caregiverId]
-              return (
-                <div key={stat.caregiverId} className="flex items-center gap-1">
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: cg.colorHex }}
-                  />
-                  <span className="text-xs text-gray-600">{cg.name}</span>
-                  <span
-                    className="text-xs font-bold"
-                    style={{ color: cg.colorHex }}
-                  >
-                    {stat.percentageOfTotal}%
-                  </span>
-                </div>
-              )
-            })}
+        {/* Drei Kuchendiagramme nebeneinander */}
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          {/* Diese Woche */}
+          <div className="flex flex-col items-center">
+            <p className="text-[10px] text-gray-400 mb-1.5 font-medium">Diese Woche</p>
+            <DonutChart stats={weekStats} size="sm" />
+            <ChartLegend stats={weekStats} />
+          </div>
+
+          {/* Dieser Monat */}
+          <div className="flex flex-col items-center">
+            <p className="text-[10px] text-gray-400 mb-1.5 font-medium">Dieser Monat</p>
+            <DonutChart stats={monthStats} size="sm" />
+            <ChartLegend stats={monthStats} />
+          </div>
+
+          {/* 2026 */}
+          <div className="flex flex-col items-center">
+            <p className="text-[10px] text-gray-400 mb-1.5 font-medium">2026</p>
+            <DonutChart stats={yearStats} size="sm" />
+            <ChartLegend stats={yearStats} />
           </div>
         </div>
       </div>
