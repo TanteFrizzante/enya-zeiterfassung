@@ -2,7 +2,13 @@ import { useState, useMemo } from 'react'
 import {
   startOfWeek,
   endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
   addWeeks,
+  addMonths,
+  addYears,
   format,
   eachDayOfInterval,
   isSameDay,
@@ -15,58 +21,264 @@ import { CAREGIVERS, ACTIVE_CAREGIVER_LIST } from '../config/caregivers'
 import { getSessionsInRange } from '../services/sessionService'
 import { getScheduledCaregiver } from '../config/schedule'
 
-export function CalendarPage() {
-  const [weekOffset, setWeekOffset] = useState(0)
+type CalendarView = 'today' | 'week' | 'month' | '2024' | '2025' | '2026'
 
-  const weekStart = startOfWeek(addWeeks(new Date(), weekOffset), {
-    weekStartsOn: 1,
-  })
-  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 })
-  const days = eachDayOfInterval({ start: weekStart, end: weekEnd })
+const VIEW_LABELS: Record<CalendarView, string> = {
+  today: 'Heute',
+  week: 'Woche',
+  month: 'Monat',
+  '2024': '2024',
+  '2025': '2025',
+  '2026': '2026',
+}
+
+function getRange(view: CalendarView, offset: number) {
+  const now = new Date()
+
+  switch (view) {
+    case 'today': {
+      const day = new Date(now)
+      day.setDate(day.getDate() + offset)
+      return { start: startOfDay(day), end: endOfDay(day) }
+    }
+    case 'week': {
+      const w = startOfWeek(addWeeks(now, offset), { weekStartsOn: 1 })
+      return { start: w, end: endOfWeek(w, { weekStartsOn: 1 }) }
+    }
+    case 'month': {
+      const m = startOfMonth(addMonths(now, offset))
+      return { start: m, end: endOfMonth(m) }
+    }
+    case '2024': {
+      const y = new Date(2024, 0, 1)
+      return { start: startOfYear(y), end: endOfYear(y) }
+    }
+    case '2025': {
+      const y = new Date(2025, 0, 1)
+      return { start: startOfYear(y), end: endOfYear(y) }
+    }
+    case '2026': {
+      const y = new Date(2026, 0, 1)
+      return { start: startOfYear(y), end: endOfYear(y) }
+    }
+  }
+}
+
+function formatRangeLabel(view: CalendarView, start: Date, end: Date): string {
+  switch (view) {
+    case 'today':
+      return format(start, 'EEEE, d. MMMM yyyy', { locale: de })
+    case 'week':
+      return `${format(start, 'd. MMM', { locale: de })} – ${format(end, 'd. MMM yyyy', { locale: de })}`
+    case 'month':
+      return format(start, 'MMMM yyyy', { locale: de })
+    case '2024':
+    case '2025':
+    case '2026':
+      return view
+  }
+}
+
+/** Compact month summary for year views */
+function MonthSummary({
+  month,
+  sessions,
+}: {
+  month: Date
+  sessions: CareSession[]
+}) {
+  const mStart = startOfMonth(month).getTime()
+  const mEnd = endOfMonth(month).getTime()
+
+  let jaieSeconds = 0
+  let mukSeconds = 0
+
+  for (const s of sessions) {
+    const sEnd = s.endTime ?? Date.now()
+    if (sEnd <= mStart || s.startTime >= mEnd) continue
+    const start = Math.max(s.startTime, mStart)
+    const end = Math.min(sEnd, mEnd)
+    const secs = (end - start) / 1000
+    if (s.caregiverId === 'jaie') jaieSeconds += secs
+    else if (s.caregiverId === 'andreas') mukSeconds += secs
+  }
+
+  const total = jaieSeconds + mukSeconds
+  const jaiePct = total > 0 ? Math.round((jaieSeconds / total) * 100) : 0
+  const mukPct = total > 0 ? 100 - jaiePct : 0
+
+  const formatH = (secs: number) => {
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
+    return h > 0 ? `${h}h ${m}m` : `${m}m`
+  }
+
+  return (
+    <div className="bg-white rounded-lg p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-semibold text-gray-700">
+          {format(month, 'MMMM', { locale: de })}
+        </span>
+        <span className="text-xs text-gray-400">
+          {total > 0 ? formatH(Math.round(total)) : '–'}
+        </span>
+      </div>
+      {total > 0 ? (
+        <>
+          <div className="h-4 bg-gray-100 rounded-full overflow-hidden flex">
+            {jaiePct > 0 && (
+              <div
+                className="h-full"
+                style={{
+                  width: `${jaiePct}%`,
+                  backgroundColor: CAREGIVERS.jaie.colorHex,
+                }}
+              />
+            )}
+            {mukPct > 0 && (
+              <div
+                className="h-full"
+                style={{
+                  width: `${mukPct}%`,
+                  backgroundColor: CAREGIVERS.andreas.colorHex,
+                }}
+              />
+            )}
+          </div>
+          <div className="flex justify-between mt-1 text-[10px] text-gray-500">
+            <span>
+              <span style={{ color: CAREGIVERS.jaie.colorHex }} className="font-medium">
+                Jaie {jaiePct}%
+              </span>
+              {' · '}
+              {formatH(Math.round(jaieSeconds))}
+            </span>
+            <span>
+              <span style={{ color: CAREGIVERS.andreas.colorHex }} className="font-medium">
+                Muk {mukPct}%
+              </span>
+              {' · '}
+              {formatH(Math.round(mukSeconds))}
+            </span>
+          </div>
+        </>
+      ) : (
+        <div className="h-4 bg-gray-100 rounded-full flex items-center justify-center">
+          <span className="text-[10px] text-gray-400">Keine Daten</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function CalendarPage() {
+  const [view, setView] = useState<CalendarView>('week')
+  const [offset, setOffset] = useState(0)
+
+  // Year views have no offset navigation
+  const isYearView = view === '2024' || view === '2025' || view === '2026'
+
+  const { start, end } = useMemo(() => getRange(view, offset), [view, offset])
+
+  const days = useMemo(() => {
+    if (isYearView) return [] // year views use MonthSummary instead
+    return eachDayOfInterval({ start, end })
+  }, [start, end, isYearView])
 
   const sessions = useMemo(
-    () => getSessionsInRange(weekStart, weekEnd),
+    () => getSessionsInRange(start, end),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [weekStart.getTime(), weekEnd.getTime()]
+    [start.getTime(), end.getTime()]
   )
+
+  const months = useMemo(() => {
+    if (!isYearView) return []
+    return Array.from({ length: 12 }, (_, i) => new Date(start.getFullYear(), i, 1))
+  }, [isYearView, start])
+
+  // Reset offset when switching views
+  const handleViewChange = (newView: CalendarView) => {
+    setView(newView)
+    setOffset(0)
+  }
+
+  const canNavigate = !isYearView
 
   return (
     <div className="flex flex-col h-full">
-      {/* Week navigation */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
-        <button
-          onClick={() => setWeekOffset((o) => o - 1)}
-          className="p-2 text-gray-600 text-xl"
-        >
-          ←
-        </button>
-        <div className="text-center">
-          <span className="font-semibold text-gray-800">
-            {format(weekStart, 'd. MMM', { locale: de })} –{' '}
-            {format(weekEnd, 'd. MMM yyyy', { locale: de })}
-          </span>
-          {weekOffset !== 0 && (
-            <button
-              onClick={() => setWeekOffset(0)}
-              className="block mx-auto text-xs text-blue-500 mt-0.5"
-            >
-              Heute
-            </button>
-          )}
-        </div>
-        <button
-          onClick={() => setWeekOffset((o) => o + 1)}
-          className="p-2 text-gray-600 text-xl"
-        >
-          →
-        </button>
+      {/* View selector */}
+      <div className="flex gap-1 mx-3 mt-3 p-1 bg-gray-100 rounded-lg">
+        {(Object.keys(VIEW_LABELS) as CalendarView[]).map((v) => (
+          <button
+            key={v}
+            onClick={() => handleViewChange(v)}
+            className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              view === v
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500'
+            }`}
+          >
+            {VIEW_LABELS[v]}
+          </button>
+        ))}
       </div>
 
-      {/* Days */}
+      {/* Navigation */}
+      <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200 mt-2">
+        {canNavigate ? (
+          <>
+            <button
+              onClick={() => setOffset((o) => o - 1)}
+              className="p-2 text-gray-600 text-lg"
+            >
+              ←
+            </button>
+            <div className="text-center">
+              <span className="font-semibold text-gray-800 text-sm">
+                {formatRangeLabel(view, start, end)}
+              </span>
+              {offset !== 0 && (
+                <button
+                  onClick={() => setOffset(0)}
+                  className="block mx-auto text-xs text-blue-500 mt-0.5"
+                >
+                  Heute
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => setOffset((o) => o + 1)}
+              className="p-2 text-gray-600 text-lg"
+            >
+              →
+            </button>
+          </>
+        ) : (
+          <div className="text-center w-full py-1">
+            <span className="font-semibold text-gray-800 text-sm">
+              {formatRangeLabel(view, start, end)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-        {days.map((day) => (
-          <DayRow key={day.toISOString()} day={day} sessions={sessions} />
-        ))}
+        {isYearView ? (
+          // Year view: month summaries
+          months.map((month) => (
+            <MonthSummary
+              key={month.toISOString()}
+              month={month}
+              sessions={sessions}
+            />
+          ))
+        ) : (
+          // Day-level views
+          days.map((day) => (
+            <DayRow key={day.toISOString()} day={day} sessions={sessions} />
+          ))
+        )}
       </div>
 
       {/* Legend */}
